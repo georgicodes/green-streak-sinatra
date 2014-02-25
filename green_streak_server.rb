@@ -18,9 +18,11 @@ class GreenStreakServer < Sinatra::Base
 
   before do
     content_type :json
-    headers 'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Methods' => ['OPTIONS', 'GET', 'POST'],
-            'Access-Control-Allow-Headers' => 'Content-Type'
+
+    headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    headers['Access-Control-Allow-Origin'] = 'http://localhost:8000'
+    headers['Access-Control-Allow-Headers'] = 'accept, authorization, origin'
+    headers['Access-Control-Allow-Credentials'] = 'true'
   end
 
   def authenticated?
@@ -28,7 +30,7 @@ class GreenStreakServer < Sinatra::Base
   end
 
   def authenticate!
-    erb :index, :locals => {:client_id => CLIENT_ID}
+    400
   end
 
   get '/' do
@@ -81,7 +83,7 @@ class GreenStreakServer < Sinatra::Base
 
   get '/auth/:tokenId' do
     puts "got a request in auth"
-    puts "Hello #{params[:tokenId]}!"
+    puts "with id #{params[:tokenId]}"
 
 
     #session_code = request.env['rack.request.query_hash']['code']
@@ -94,7 +96,13 @@ class GreenStreakServer < Sinatra::Base
                              :accept => :json)
 
     session[:access_token] = JSON.parse(result)['access_token']
+    puts "access token granted #{session[:access_token]}"
 
+    response.set_cookie("GreenStreakCookie", {
+        :expires => Time.now + 2400,
+        :value => "#{session[:access_token]}",
+        :path => '/'
+    })
     {:authOK => true}.to_json
   end
 
@@ -122,9 +130,13 @@ class GreenStreakServer < Sinatra::Base
     {:authOK => true}.to_json
   end
 
-  get '/repos' do
-    #content_type :json
-    access_token = session[:access_token]
+  get '/languages' do
+    cookie = request.cookies["GreenStreakCookie"]
+    puts "cookie #{cookie}"
+
+    access_token = cookie
+    #access_token = session[:access_token]
+    puts "Stored access token #{access_token}"
 
     repos = RestClient.get('https://api.github.com/user/repos',
                            {:params => {:access_token => access_token},
@@ -133,10 +145,12 @@ class GreenStreakServer < Sinatra::Base
 
     languages, language_obj = getLanguageCount(hash)
 
-    language_bytes, language_byte_count = getLanguageBytes(hash, language_obj)
+    #language_bytes, language_byte_count = getLanguageBytes(hash, language_obj)
     t2 = Time.now
     puts t2
-    erb :lang_freq, :locals => {:languages => languages.to_json, :language_byte_count => language_bytes.to_json}
+    puts languages.to_json
+    return languages.to_json
+    #erb :lang_freq, :locals => {:languages => languages.to_json, :language_byte_count => language_bytes.to_json}
   end
 
   def getLanguageCount(repoHash)
