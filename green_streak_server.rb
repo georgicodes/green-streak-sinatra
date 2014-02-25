@@ -81,6 +81,10 @@ class GreenStreakServer < Sinatra::Base
     end
   end
 
+  get '/status' do
+    "Hello World"
+  end
+
   get '/auth/:tokenId' do
     puts "got a request in auth"
     puts "with id #{params[:tokenId]}"
