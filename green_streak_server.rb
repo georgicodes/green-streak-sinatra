@@ -129,14 +129,6 @@ class GreenStreakServer < Sinatra::Base
 
     session[:access_token] = JSON.parse(result)['access_token']
 
-    #redirect '/'
-    #cross_origin :allow_origin => '*',
-    #             :allow_methods => [:get],
-    #             :allow_credentials => false,
-    #             :max_age => "60"
-    #
-    #puts "authorised aOK"
-    #content_type :json
     {:authOK => true}.to_json
   end
 
