@@ -1,5 +1,7 @@
 require 'sinatra/base'
 require 'rest_client'
+require 'uri'
+require 'net/https'
 require 'json'
 require 'typhoeus'
 
@@ -90,6 +92,27 @@ class GreenStreakServer < Sinatra::Base
     "Hello World #{params[:id]}"
   end
 
+  get '/contributions/:userId' do
+    "Retrieving contributions by #{params[:userId]}"
+
+    contributions = getContributions(params[:userId])
+    puts contributions
+    return contributions.to_json
+  end
+
+  def getContributions(userId)
+    url = "https://github.com/users/#{userId}/contributions_calendar_data"
+    uri = URI.parse(url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    if uri.scheme == 'https'
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    end
+    request = Net::HTTP::Get.new(uri.request_uri)
+    #request.basic_auth(USERNAME, PASSWORD)
+    response = http.request(request)
+    JSON.parse(response.body)
+  end
 
   get '/auth/:tokenId' do
     puts "got a request in auth"
